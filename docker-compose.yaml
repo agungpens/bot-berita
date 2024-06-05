@@ -1,0 +1,177 @@
+services:
+#  database
+  # NOTE: chainguard don't have stable version of elasticsearch
+  # elasticsearch:
+  #   container_name: elasticsearch
+
+  mariadb:
+    container_name: mariadb
+    image: cgr.dev/chainguard/mariadb:latest
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: password
+    volumes:
+      - type: volume
+        source: mariadb
+        target: /var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  # NOTE: chainguard don't have stable version of mongodb
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - type: volume
+        source: mongo
+        target: /data/db
+    ports:
+      - "27017:27017"
+
+  # NOTE: chainguard don't have stable version of mysql
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - type: volume
+        source: mysql
+        target: /var/lib/mysql
+    ports:
+      - "3307:3306"
+
+  postgres:
+    container_name: postgres
+    image: cgr.dev/chainguard/postgres:latest
+    environment:
+        POSTGRES_USER: root
+        POSTGRES_PASSWORD: password
+    volumes:
+      - type: volume
+        source: postgres
+        target: "/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: redis
+    image: cgr.dev/chainguard/redis:latest
+    environment:
+      ALLOW_EMPTY_PASSWORD: "no"
+      REDIS_PASSWORD: password
+    volumes:
+      - type: volume
+        source: redis
+        target: /data
+    ports:
+      - "6379:6379"
+
+
+
+#  tool
+  jenkins:
+    container_name: jenkins
+    image: cgr.dev/chainguard/jenkins:latest
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: jenkins
+        target: /var/jenkins_home
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zoo
+
+  # NOTE: chainguard don't have management version of rabbitmq
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - type: volume
+        source: rabbitmq
+        target: /var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+# TODO: Fix the vault service, keep exiting
+  # vault:
+  #   container_name: vault
+  #   image: cgr.dev/chainguard/vault:latest
+  #   command: server -dev -dev-root-token-id=root
+  #   cap_add:
+  #     - IPC_LOCK
+  #   environment:
+  #     - 'VAULT_API_ADDR=localhost:8200'
+  #     - 'VAULT_LOCAL_CONFIG={"storage": {"file": {"path": "/var/lib/vault"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h", "ui": true}'
+  #   volumes:
+  #     - type: volume
+  #       source: vault
+  #       target: /var/lib/vault
+  #   ports:
+  #     - "8200:8200"
+
+  zoo:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zoo
+    container_name: zoo
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zoo:2888:3888
+
+
+volumes:
+  mariadb:
+    name: mariadb
+  mongo:
+    name: mongo
+  mysql:
+    name: mysql
+  postgres:
+    name: postgres
+  redis:
+    name: redis
+
+  jenkins:
+    name: jenkins
+  rabbitmq:
+    name: rabbitmq
+  # vault:
+  #   name: vault
