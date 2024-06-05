@@ -8,4 +8,4 @@ RUN npm install --only=production
 
 COPY . .
 
-CMD [ "node", "bot2.js" ]
+CMD [ "node", "bot2.js"]
