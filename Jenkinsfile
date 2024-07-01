@@ -28,8 +28,8 @@ pipeline {
 
         stage('Run') {
             steps {
-                sh 'sudo docker stop bot-berita'
-                sh 'sudo docker rm bot-berita'
+                // sh 'sudo docker stop bot-berita'
+                // sh 'sudo docker rm bot-berita'
                 sh 'sudo docker run -d --name bot-berita bot-berita:latest'
             }
         }
